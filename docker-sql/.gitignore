@@ -1,0 +1,15 @@
+#data
+*.csv
+*_data
+
+# temp files
+*.swp
+*.un~
+
+# test notebook
+*.ipynb
+
+# terraform config dir lockfile, state
+.terraform
+*.lock.hcl
+*.tfstate*
