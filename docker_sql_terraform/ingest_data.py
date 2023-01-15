@@ -17,7 +17,6 @@ def ingest(params):
     url = params.url
     csv_name = 'output.csv'
     
-    # TODO lazy solution, need to use requests
     os.system(f"wget {url} -O {csv_name}")
     
     engine = create_engine(f'postgresql://{user}:{password}@{host}:{port}/{db}') # creating and connecting to the postgres database
