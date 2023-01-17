@@ -1,29 +1,20 @@
 import pandas as pd
-
 # pandas can connect with sql databases to produce sql dialect specific results, using sqlalchemy engines
 from sqlalchemy import create_engine
 
-# argparse allows us to have named arguments
 import time
-import os
 
-def ingest(params):
-    user = params.user
-    password = params.password
-    host = params.host
-    port = params.port
-    db = params.db
-    table_name = params.table_name
-    url = params.url
-    csv_name = 'output.csv'
+def ingest_callable(user, password, host, port, db, table_name, csv_file):
     
-    os.system(f"wget {url} -O {csv_name}")
+    print(table_name, csv_file)
     
     engine = create_engine(f'postgresql://{user}:{password}@{host}:{port}/{db}') # creating and connecting to the postgres database
     engine.connect()
+    
+    print('Connection established successfully!')
 
     # iterator allows us to chunk parts of data into batches. Large data doesn't fit in memory, batching to chunks is useful in data engg
-    raw_data_iter = pd.read_csv(csv_name, compression='gzip', iterator=True, chunksize=100000) # returns a generator useful for batching
+    raw_data_iter = pd.read_csv(csv_file, compression='gzip', iterator=True, chunksize=100000) # returns a generator useful for batching
 
     raw_data_df = next(raw_data_iter)
 
