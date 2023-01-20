@@ -1,13 +1,11 @@
 import os
+
 from airflow import DAG
-
-from datetime import datetime
-
-#operators
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
-from ingestion_script import ingest_callable
+from ingestion_script import ingest_taxi_lookup
+from datetime import datetime
 
 AIRFLOW_HOME = os.environ.get('AIRFLOW_HOME','/opt/airflow')
 
@@ -18,22 +16,16 @@ PG_PORT = os.getenv('PG_PORT')
 PG_DATABASE = os.getenv('PG_DATABASE')
 
 local_workflow = DAG(
-    dag_id = "LocalIngestionDAG",
-    schedule_interval= "0 6 2 * *", # this takes a cron expression https://crontab.guru/#0_6_2_*_*
+    dag_id = "LocalIngestionLookupDAG",
+    schedule_interval= "@yearly", # this takes a cron expression https://crontab.guru/#0_6_*_1_*
     start_date= datetime(2019, 1, 1)
 )
 
-COLOR = "green"
-URL_PREFIX = "https://github.com/DataTalksClub/nyc-tlc-data/releases/download/"+COLOR
-URL_TEMPLATE = URL_PREFIX + f"/{COLOR}"+"_tripdata_{{execution_date.strftime('%Y-%m')}}.csv.gz" # jinja is supported. execution_date gives date of execution
-
-
-FILE_TEMPLATE = AIRFLOW_HOME+"/output_{{execution_date.strftime('%Y-%m')}}.csv.gz"
-
-TABLE_TEMPLATE = COLOR+"_taxi_{{execution_date.strftime('%Y_%m')}}"
+URL_TEMPLATE = "https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv"
+FILE_TEMPLATE = AIRFLOW_HOME +"/taxi_zone_lookup.csv"
+TABLE_TEMPLATE = "taxi_zone_lookup"
 
 with local_workflow:
-    
     wget_task = BashOperator(
         task_id='wget',
         bash_command=f'curl -sSL {URL_TEMPLATE} > {FILE_TEMPLATE}',
@@ -41,7 +33,7 @@ with local_workflow:
     
     ingest_task = PythonOperator(
         task_id='ingest',
-        python_callable=ingest_callable,
+        python_callable=ingest_taxi_lookup,
         op_kwargs= {
             'user': PG_USER,
             'password': PG_PASSWORD,
@@ -53,6 +45,4 @@ with local_workflow:
         }
     )
     
-    #workflow definition at the end
     wget_task >> ingest_task
-
